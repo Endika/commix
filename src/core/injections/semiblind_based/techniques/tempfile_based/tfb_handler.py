@@ -158,6 +158,8 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
             break
           else:
             percent = str(percent)+"%"
+          #Print logs notification message
+          logs.logs_notification(filename)
           raise
         else:
           percent = str(percent)+"%"
@@ -201,6 +203,10 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
           # Check for any enumeration options.
           tfb_file_access.do_check(separator, maxlen, TAG, delay, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
           
+          # Check if defined single cmd.
+          if menu.options.os_cmd:
+            tfb_enumeration.single_os_cmd_exec(separator, maxlen, TAG, delay, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+
           # Pseudo-Terminal shell
           while True:
             gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
@@ -211,6 +217,7 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
                 try:
                   cmd = raw_input("Shell > ")
                   if cmd == "q":
+                    logs.logs_notification(filename)
                     sys.exit(0)
                     
                   else:
@@ -227,8 +234,7 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
                       print ""
                     
                 except KeyboardInterrupt: 
-                  print ""
-                  sys.exit(0)
+                  raise
                   
             elif gotshell in settings.CHOISE_NO:
               break
@@ -245,12 +251,9 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
         break
     
   if no_result == True:
-    if menu.options.verbose == False:
-      print ""
-      return False
-    else:
-      print ""
-      return False
+    print ""
+    return False
+
   else :
     sys.stdout.write("\r")
     sys.stdout.flush()
@@ -260,7 +263,7 @@ The exploitation function.
 (call the injection handler)
 """
 def exploitation(url, delay, filename, tmp_path, http_request_method, url_time_response):
-    if tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, url_time_response) == False:
-      return False
+  if tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, url_time_response) == False:
+    return False
     
 #eof 
