@@ -115,10 +115,20 @@ request.add_option("--random-agent",
                 default = False,
                 help="Use a randomly selected HTTP User-Agent header.")
 
+request.add_option("--param-del",
+                action="store",
+                dest="pdel",
+                help="Set character for splitting parameter values.")
+
 request.add_option("--cookie",
                 action="store",
                 dest="cookie",
                 help="HTTP Cookie header.")
+
+request.add_option("--cookie-del",
+                action="store",
+                dest="cdel",
+                help="Set character for splitting cookie values.")
 
 request.add_option("--headers",
                 action="store",
@@ -333,4 +343,10 @@ option.help = option.help.capitalize().replace("Show this help message and exit"
 
 (options, args) = parser.parse_args()
 
+
+def shell_options():
+      print """
+  Type '""" + Style.BRIGHT + """back""" + Style.RESET_ALL + """' to go back to the injection proccess.
+  Type '""" + Style.BRIGHT + """quit""" + Style.RESET_ALL + """' (or use <Ctrl-C>) to quit commix.
+      """
 #eof

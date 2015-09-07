@@ -102,7 +102,7 @@ def cb_injection_handler(url, delay, filename, http_request_method):
 
             # Check if defined "--verbose" option.
             if menu.options.verbose:
-              sys.stdout.write("\n" + Fore.GREY + payload + Style.RESET_ALL)
+              sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload + Style.RESET_ALL)
               
             # if need page reload
             if menu.options.url_reload:
@@ -114,6 +114,19 @@ def cb_injection_handler(url, delay, filename, http_request_method):
               # Check if target host is vulnerable to cookie injection.
               vuln_parameter = parameters.specify_cookie_parameter(menu.options.cookie)
               response = cb_injector.cookie_injection_test(url, vuln_parameter, payload)
+              
+            # User-Agent Injection
+            elif settings.USER_AGENT_INJECTION == True:
+              # Check if target host is vulnerable to user-agent injection.
+              vuln_parameter = parameters.specify_user_agent_parameter(menu.options.agent)
+              response = cb_injector.user_agent_injection_test(url, vuln_parameter, payload)
+
+            # Referer Injection
+            elif settings.REFERER_INJECTION == True:
+              # Check if target host is vulnerable to referer injection.
+              vuln_parameter = parameters.specify_referer_parameter(menu.options.referer)
+              response = cb_injector.referer_injection_test(url, vuln_parameter, payload)
+
             else:
               # Check if target host is vulnerable.
               response, vuln_parameter = cb_injector.injection_test(payload, http_request_method, url)
@@ -123,15 +136,17 @@ def cb_injection_handler(url, delay, filename, http_request_method):
 
             if not menu.options.verbose:
               percent = ((i*100)/total)
+              float_percent = "{0:.1f}".format(round(((i*100)/(total*1.0)),2))
+
               if percent == 100:
                 if no_result == True:
                   percent = Fore.RED + "FAILED" + Style.RESET_ALL
                 else:
-                  percent = str(percent)+"%"
+                  percent = str(float_percent)+"%"
               elif len(shell) != 0:
                 percent = Fore.GREEN + "SUCCEED" + Style.RESET_ALL
               else:
-                percent = str(percent)+"%"
+                percent = str(float_percent)+"%"
               sys.stdout.write("\r(*) Testing the "+ technique + "... " +  "[ " + percent + " ]")  
               sys.stdout.flush()
               
@@ -148,13 +163,30 @@ def cb_injection_handler(url, delay, filename, http_request_method):
             no_result = False
 
             if settings.COOKIE_INJECTION == True: 
-              http_request_method = "cookie"
+              header_name = " Cookie"
               found_vuln_parameter = vuln_parameter
-            else:
+              the_type = " HTTP header"
+
+            elif settings.USER_AGENT_INJECTION == True: 
+              header_name = " User-Agent"
+              found_vuln_parameter = ""
+              the_type = " HTTP header"
+
+            elif settings.REFERER_INJECTION == True: 
+              header_name = " Referer"
+              found_vuln_parameter = ""
+              the_type = " HTTP header"
+
+            else:    
+              header_name = ""
+              the_type = " parameter"
               if http_request_method == "GET":
                 found_vuln_parameter = parameters.vuln_GET_param(url)
               else :
                 found_vuln_parameter = vuln_parameter
+
+            if len(found_vuln_parameter) != 0 :
+              found_vuln_parameter = " '" + Style.UNDERLINE + found_vuln_parameter + Style.RESET_ALL  + Style.BRIGHT + "'" 
 
             # Print the findings to log file.
             if export_injection_info == False:
@@ -165,7 +197,7 @@ def cb_injection_handler(url, delay, filename, http_request_method):
             counter = counter + 1
             
             # Print the findings to terminal.
-            print Style.BRIGHT + "\n(!) The ("+ http_request_method + ") '" + Style.UNDERLINE + found_vuln_parameter + Style.RESET_ALL + Style.BRIGHT + "' parameter is vulnerable to "+ injection_type +"."+ Style.RESET_ALL
+            print Style.BRIGHT + "\n(!) The ("+ http_request_method + ")" + found_vuln_parameter + header_name + the_type + " is vulnerable to "+ injection_type + "." + Style.RESET_ALL
             print "  (+) Type : "+ Fore.YELLOW + Style.BRIGHT + injection_type + Style.RESET_ALL + ""
             print "  (+) Technique : "+ Fore.YELLOW + Style.BRIGHT + technique.title() + Style.RESET_ALL + ""
             print "  (+) Payload : "+ Fore.YELLOW + Style.BRIGHT + re.sub("%20", " ", payload) + Style.RESET_ALL
@@ -181,19 +213,29 @@ def cb_injection_handler(url, delay, filename, http_request_method):
               cb_enumeration.single_os_cmd_exec(separator, TAG, prefix, suffix, whitespace, http_request_method, url, vuln_parameter, alter_shell)
 
             # Pseudo-Terminal shell
+            go_back = False
             while True:
+              if go_back == True:
+                break
               gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
               if gotshell in settings.CHOISE_YES:
-
                 print ""
-                print "Pseudo-Terminal (type 'q' or use <Ctrl-C> to quit)"
+                print "Pseudo-Terminal (type '?' for shell options)"
                 while True:
                   try:
                     cmd = raw_input("Shell > ")
-                    if cmd == "q":
-                      logs.logs_notification(filename)
-                      sys.exit(0)
-                      
+                    if cmd.lower() in settings.SHELL_OPTIONS:
+                      if cmd.lower() == "?":
+                        menu.shell_options()
+                      elif cmd.lower() == "quit":
+                        logs.logs_notification(filename)
+                        sys.exit(0)
+                      elif cmd.lower() == "back":
+                        go_back = True
+                        break
+                      else:
+                        pass
+
                     else:
                       # Command execution results.
                       response = cb_injector.injection(separator, TAG, cmd, prefix, suffix, whitespace, http_request_method, url, vuln_parameter, alter_shell)
@@ -207,7 +249,10 @@ def cb_injection_handler(url, delay, filename, http_request_method):
                       shell = cb_injector.injection_results(response, TAG)
                       if shell:
                         shell = "".join(str(p) for p in shell)
-                        print "\n" + Fore.GREEN + Style.BRIGHT + shell + Style.RESET_ALL + "\n"
+                        if shell != "":
+                          print "\n" + Fore.GREEN + Style.BRIGHT + shell + Style.RESET_ALL + "\n"
+                        else:
+                          print "\n" + Back.RED + "(x) Error: The '" + cmd + "' command, does not return any output." + Style.RESET_ALL + "\n"
 
                   except KeyboardInterrupt: 
                     raise

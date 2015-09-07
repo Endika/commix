@@ -35,6 +35,8 @@ Commix comes packaged on the official repositories of the following Linux distri
 Commix also comes pre-installed, on the following penetration testing frameworks:
 - [The Penetration Testers Framework (PTF)](https://github.com/trustedsec/ptf)
 - [PentestBox](https://tools.pentestbox.com/)
+- [Weakerthan](http://www.weaknetlabs.com/)
+- [CTF-Tools](https://github.com/zardus/ctf-tools)
 
 ####Usage
 To get a list of all options and switches use:
@@ -64,6 +66,7 @@ A collection of pwnable VMs, that includes web apps vulnerable to command inject
 - [SpiderLabs: MCIR (ShelLOL)](https://github.com/SpiderLabs/MCIR/tree/master/shellol)
 - [Kioptrix: Level 1.1 (#2)](https://www.vulnhub.com/entry/kioptrix-level-11-2,23/)
 - [Kioptrix: 2014 (#5)](https://www.vulnhub.com/entry/kioptrix-2014-5,62/)
+- [Acid Server: 1](https://www.vulnhub.com/entry/acid-server-1,125/)
 - [w3af-moth](https://github.com/andresriancho/w3af-moth/)
 - [commix-testbed](https://github.com/stasinopoulos/commix-testbed)
 
@@ -74,6 +77,9 @@ A collection of pwnable VMs, that includes web apps vulnerable to command inject
 - [Exploiting shellshock command injection flaws.](https://www.youtube.com/watch?v=5NvopJsCj4w)
 - [Upload a PHP shell (i.e. Metasploit PHP Meterpreter) on target host.](https://www.youtube.com/watch?v=MdzGY2ws2zY)
 - [Upload a Weevely PHP web shell on target host.](https://www.youtube.com/watch?v=cy7AW6OQBmU)
+- [Exploiting cookie-based command injection flaws via commix.](https://www.youtube.com/watch?v=ae4DOS-3vm8)
+- [Exploiting user-agent-based command injection flaws via commix.](https://www.youtube.com/watch?v=g3hSFOFRJrc)
+- [Exploiting referer-based command injection flaws via commix.](https://www.youtube.com/watch?v=uMt9_jDaJUI)
 
 ####Bugs and Enhancements
 For bug reports or enhancements, please open an issue [here](https://github.com/stasinopoulos/commix/issues).

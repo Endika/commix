@@ -38,8 +38,14 @@ if os.path.isdir("./.git"):
   with open('.git/refs/heads/master', 'r') as f:
     COMMIT_ID = "-" + f.readline()[0:7]
 else:
-    COMMIT_ID = ""
-    
+    COMMIT_ID = "-" + "NonGit"
+
+# Check if OS is Windows.
+IS_WINDOWS = hasattr(sys, 'getwindowsversion')
+
+# Git URL.
+GIT_URL = "https://github.com/stasinopoulos/" + APPLICATION + ".git"
+
 # Output Directory
 OUTPUT_DIR = ".output/"  
 
@@ -52,13 +58,13 @@ OUTPUT_FILE_EXT = ".txt"
 OUTPUT_FILE = OUTPUT_FILE_NAME + OUTPUT_FILE_EXT
 
 # The command injection prefixes.
-PREFIXES = ["","|","&","%7C","%26"] 
+PREFIXES = ["","'","\"","|","&","%27","%22","%7C","%26"] 
 
 # The command injection separators.
 SEPARATORS = [""," ",";","&","|","||","&&","%0a","%3B","%26","%26%26","%7C","%7C%7C"]
 
 # The command injection suffixes.
-SUFFIXES = ["","#","//","\\\\","&","|","%5C%5C","%2F%2F","%26","%7C"]
+SUFFIXES = ["","'","\"","#","//","\\\\","&","|","%27","%22","%5C%5C","%2F%2F","%26","%7C"]
 
 # Bad combination of prefix and separator
 JUNK_COMBINATION = ["&&&","|||","|&&","&|","&;","|;","%7C;","%26;","%7C&"]
@@ -82,7 +88,8 @@ DELAY = 1
 TMP_PATH = "/tmp/"
 
 # Default Server's Root Directory
-SRV_ROOT_DIR = "/var/www/"
+SRV_ROOT_DIR = "/var/www"
+
 PASSWD_FILE = "/etc/passwd"
 SHADOW_FILE = "/etc/shadow"
 
@@ -162,7 +169,61 @@ PRIVOXY_PORT = "8118"
 # Cookie injection
 COOKIE_INJECTION = False
 
+# User-Agent injection
+USER_AGENT_INJECTION = False
+
+# Referer injection
+REFERER_INJECTION = False
+
 # Valid URL format check
 VALID_URL_FORMAT = "https?://(?:www)?(?:[\w-]{2,255}(?:\.\w{2,6}){1,2})(?:/[\w&%?#-]{1,300})?"
+
+# Accepted shell menu options
+SHELL_OPTIONS = ['?','quit','back']
+
+# Cookie delimiter
+COOKIE_DELIMITER = ";"
+
+# Cookie delimiter
+PARAMETER_DELIMITER = "&"
+
+# Web-page Charset
+CHARSET = ""
+
+# Character Sets List (basic)
+CHARSET_LIST = [
+        "big5",
+        "euc-kr",
+        "iso-8859-1",
+        "iso-8859-2",
+        "iso-8859-3",
+        "iso-8859-4",
+        "iso-8859-5",
+        "iso-8859-6",
+        "iso-8859-7",
+        "iso-8859-8",
+        "koi8-r",
+        "shift-jis",
+        "x-euc",
+        "utf-8",
+        "windows-1250",
+        "windows-1251",
+        "windows-1252",
+        "windows-1253",
+        "windows-1254",
+        "windows-1255",
+        "windows-1256",
+        "windows-1257",
+        "windows-1258",
+        "windows-874",
+]
+
+SERVER_BANNER = ""
+
+SERVER_BANNERS = [
+    "Microsoft-IIS",
+    "Apache",
+    "Nginx"
+]
 
 #eof

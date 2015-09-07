@@ -41,30 +41,29 @@ from src.core.injections import controller
 """
 
 # use Colorama to make Termcolor work on Windows too :)
-is_windows = hasattr(sys, 'getwindowsversion')
-if is_windows:
+if settings.IS_WINDOWS:
   init()
 
 def main():
 
   try:
-    #Call the banner
+    # Checkall the banner
     menu.banner()
         
     # Check python version number.
     version.python_version()
     
-    #Check if defined "--version" option.
+    # Check if defined "--version" option.
     if menu.options.version:
       version.show_version()
       sys.exit(0)
         
-    #Check if defined "--update" option.        
+    # Check if defined "--update" option.        
     if menu.options.update:
       update.updater()
       sys.exit(0)
         
-    #Check if defined "--install" option.        
+    # Check if defined "--install" option.        
     if menu.options.install:
       install.installer()
       sys.exit(0)
@@ -75,12 +74,20 @@ def main():
       print ""
       sys.exit(0)
 
-    #Check if specified wrong injection technique
+    # Check if defined character used for splitting parameter values.
+    if menu.options.pdel:
+     settings.PARAMETER_DELIMITER = menu.options.pdel
+
+    # Check if defined character used for splitting cookie values.
+    if menu.options.cdel:
+     settings.COOKIE_DELIMITER = menu.options.cdel
+
+    # Check if specified wrong injection technique
     if menu.options.tech and menu.options.tech not in settings.AVAILABLE_TECHNIQUES:
       found_tech = False
       # Convert injection technique(s) to lowercase
       menu.options.tech = menu.options.tech.lower()
-      #Check if used the ',' separator
+      # Check if used the ',' separator
       if "," in menu.options.tech:
         split_techniques_names = menu.options.tech.split(",")
       else:
@@ -101,12 +108,19 @@ def main():
     if menu.options.cookie and settings.INJECT_TAG in menu.options.cookie:
       settings.COOKIE_INJECTION = True
 
-    #Check if specified wrong alternative shell
+    # User-Agent Injection
+    if menu.options.agent and settings.INJECT_TAG in menu.options.agent:
+      settings.USER_AGENT_INJECTION = True
+
+    # Referer Injection
+    if menu.options.referer and settings.INJECT_TAG in menu.options.referer:
+      settings.REFERER_INJECTION = True
+
+    # Check if specified wrong alternative shell
     if menu.options.alter_shell:
       if menu.options.alter_shell.lower() not in settings.AVAILABLE_SHELLS:
         print Back.RED + "(x) Error: '" + menu.options.alter_shell + "' shell is not supported!" + Style.RESET_ALL
         sys.exit(0)
-
 
     # Check if defined "--file-upload" option.
     if menu.options.file_upload:
@@ -135,12 +149,13 @@ def main():
       print Back.RED + "(x) Error: You must enter the '--file-write' or '--file-upload' parameter." + Style.RESET_ALL
       sys.exit(0)
         
-    #Check if defined "--random-agent" option.
+    # Check if defined "--random-agent" option.
     if menu.options.random_agent:
       menu.options.agent = random.choice(settings.USER_AGENT_LIST)
             
-    #Check if defined "--url" option.
+    # Check if defined "--url" option.
     if menu.options.url:
+
       sys.stdout.write("(*) Checking connection to the target URL... ")
       sys.stdout.flush()
       url = menu.options.url
@@ -149,16 +164,61 @@ def main():
       if not urlparse.urlparse(url).scheme:
         url = "http://" + url
 
+      if menu.options.output_dir:
+        output_dir = menu.options.output_dir
+      else:
+        output_dir = settings.OUTPUT_DIR
+      dir = os.path.dirname(output_dir)
+      try:
+        os.stat(output_dir)
+      except:
+        os.mkdir(output_dir)   
+
+      # The logs filename construction.
+      filename = logs.create_log_file(url, output_dir)
+
       try:
         request = urllib2.Request(url)
-        
-        #Check if defined extra headers.
+        # Check if defined extra headers.
         headers.do_check(request)
         response = urllib2.urlopen(request)
+        html_data = response.read()
+
         content = response.read()
         print "[ " + Fore.GREEN + "SUCCEED" + Style.RESET_ALL + " ]"
 
-        #Check if defined "--tor" option.
+        if response.info()['server'] :
+          server_banner = response.info()['server']
+        found_server_banner = False
+        for i in range(0,len(settings.SERVER_BANNERS)):
+          if settings.SERVER_BANNERS[i].lower() in server_banner.lower():
+            if menu.options.verbose:
+              print Style.BRIGHT + "(!) The server was identified as " + Style.UNDERLINE + server_banner + Style.RESET_ALL + "." + Style.RESET_ALL
+            settings.SERVER_BANNER = server_banner
+            found_server_banner = True
+            break
+
+        if found_server_banner != True:
+          print  Fore.YELLOW + "(^) Warning: The server which was identified as " + server_banner + " seems unknown." + Style.RESET_ALL
+
+        # Charset detection [1].
+        # [1] http://www.w3schools.com/html/html_charset.asp
+        # Check if HTML4 format
+        content = re.findall(r";charset=(.*)\"", html_data)
+        if len(content) != 0 :
+          charset = content
+        else:
+           # Check if HTML5 format
+          charset = re.findall(r"charset=['\"](.*)['\"]", html_data)
+        if len(charset) != 0 :
+          settings.CHARSET = charset[len(charset)-1]
+          if settings.CHARSET.lower() not in settings.CHARSET_LIST:
+            print  Fore.YELLOW + "(^) Warning: The indicated web-page charset "  + settings.CHARSET + " seems unknown." + Style.RESET_ALL
+          else:
+            if menu.options.verbose:
+              print Style.BRIGHT + "(!) The indicated web-page charset appears to be "  + Style.UNDERLINE  + settings.CHARSET + Style.RESET_ALL + "." + Style.RESET_ALL
+
+        # Check if defined "--tor" option.
         if menu.options.tor:
           tor.do_check()
 
@@ -203,22 +263,9 @@ def main():
       print Back.RED + "(x) Error: You must specify the target URL." + Style.RESET_ALL + "\n"
       sys.exit(0)
 
-    #Check if defined "--proxy" option.
+    # Check if defined "--proxy" option.
     if menu.options.proxy:
       proxy.do_check(url)
-
-    if menu.options.output_dir:
-      output_dir = menu.options.output_dir
-    else:
-      output_dir = settings.OUTPUT_DIR
-    dir = os.path.dirname(output_dir)
-    try:
-      os.stat(output_dir)
-    except:
-      os.mkdir(output_dir)   
-
-    # The logs filename construction.
-    filename = logs.create_log_file(url, output_dir)
 
     # Launch injection and exploitation controller.
     controller.do_check(url, filename)

