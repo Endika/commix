@@ -93,7 +93,6 @@ def input_cmd(http_request_method, url, vuln_parameter, ip_src):
         if cmd.lower() == "?":
           menu.shell_options()
         elif cmd.lower() == "quit":
-          logs.logs_notification(filename)
           os._exit(0)
         elif cmd.lower() == "back":
           os._exit(0)
@@ -131,7 +130,7 @@ def icmp_exfiltration_handler(url, http_request_method):
     os._exit(0)
 
   if http_request_method == "GET":
-    url = parameters.do_GET_check(url)
+    #url = parameters.do_GET_check(url)
     vuln_parameter = parameters.vuln_GET_param(url)
     request = urllib2.Request(url)
     headers.do_check(request)

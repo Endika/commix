@@ -19,6 +19,7 @@ import sys
 import time
 import string
 import random
+import base64
 import urllib
 import urllib2
 
@@ -62,8 +63,8 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
     
   # Check if defined "--url-reload" option.
   if menu.options.url_reload == True:
-    print Back.RED + "(x) Error: The '--url-reload' option is not available in "+ technique +"!" + Style.RESET_ALL
-
+    print Fore.YELLOW + "(^) Warning: The '--url-reload' option is not available in "+ technique +"." + Style.RESET_ALL
+  
   percent = str(percent)+"%"
   sys.stdout.write("\r(*) Testing the "+ technique + "... " +  "[ " + percent + " ]")  
   sys.stdout.flush()
@@ -101,7 +102,10 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
             # Fix prefixes / suffixes
             payload = parameters.prefixes(payload, prefix)
             payload = parameters.suffixes(payload, suffix)
-              
+
+            if menu.options.base64:
+              payload = base64.b64encode(payload)
+
             # Check if defined "--verbose" option.
             if menu.options.verbose:
               sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
@@ -235,7 +239,7 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
               while True:
                 if go_back == True:
                   break
-                gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
+                gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
                 if gotshell in settings.CHOISE_YES:
                   print ""
                   print "Pseudo-Terminal (type '?' for shell options)"
@@ -247,7 +251,6 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
                           menu.shell_options()
                           continue
                         elif cmd.lower() == "quit":
-                          logs.logs_notification(filename)
                           sys.exit(0)
                         elif cmd.lower() == "back":
                           go_back = True
@@ -283,6 +286,9 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
                     sys.stdout.write("\r(*) Continue testing the "+ technique +"... ")
                     sys.stdout.flush()
                   break
+
+                elif gotshell in settings.CHOISE_QUIT:
+                  sys.exit(0)
 
                 else:
                   if gotshell == "":

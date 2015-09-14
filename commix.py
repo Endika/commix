@@ -21,6 +21,7 @@ import random
 import httplib
 import urllib2
 import urlparse
+
 # Disable SSL verification.
 # For python versions 2.7.9 or above.
 import ssl
@@ -291,7 +292,9 @@ def main():
     sys.exit(0)
 
   except SystemExit: 
-    print ""
+    if settings.SHOW_LOGS_MSG == True:
+      logs.logs_notification(filename)
+      print ""
     sys.exit(0)
   
   # Accidental stop / restart of the target host server.

