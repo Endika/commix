@@ -46,7 +46,8 @@ from src.thirdparty.colorama import Fore, Back, Style, init
 from src.core.requests import tor
 from src.core.requests import proxy
 from src.core.requests import headers
-from src.core.injections import controller
+
+from src.core.injections.controller import controller
 
 """
  The main function.
@@ -55,8 +56,6 @@ from src.core.injections import controller
 # use Colorama to make Termcolor work on Windows too :)
 if settings.IS_WINDOWS:
   init()
-
-
 
 def main():
 
@@ -87,6 +86,12 @@ def main():
       menu.parser.print_help()
       print ""
       sys.exit(0)
+
+    # Modification on payload
+    if not menu.options.shellshock:
+      #settings.CURRENT_USER = "echo $(" + settings.CURRENT_USER + ")"
+      settings.SYS_USERS  = "echo $(" + settings.SYS_USERS + ")"
+      settings.SYS_PASSES  = "echo $(" + settings.SYS_PASSES + ")"
 
     # Check if defined character used for splitting parameter values.
     if menu.options.pdel:
@@ -136,32 +141,39 @@ def main():
         print Back.RED + "(x) Error: '" + menu.options.alter_shell + "' shell is not supported!" + Style.RESET_ALL
         sys.exit(0)
 
+    # Check the file-destination
+    if menu.options.file_write and not menu.options.file_dest or \
+    menu.options.file_upload  and not menu.options.file_dest:
+      print Back.RED + "(x) Error: Host's absolute filepath to write and/or upload, must be specified (--file-dest)." + Style.RESET_ALL
+      sys.exit(0)
+
+    if menu.options.file_dest and menu.options.file_write == None and menu.options.file_upload == None :
+       print Back.RED + "(x) Error: You must enter the '--file-write' or '--file-upload' parameter." + Style.RESET_ALL
+       sys.exit(0)
+
     # Check if defined "--file-upload" option.
     if menu.options.file_upload:
-
       # Check if not defined URL for upload.
       if not re.match(settings.VALID_URL_FORMAT, menu.options.file_upload):
-        sys.stdout.write(Back.RED + "(x) Error: The '"+ menu.options.file_upload + "' is not a valid URL. " + Style.RESET_ALL + "\n")
-        sys.stdout.flush()
+        print Back.RED + "(x) Error: The '"+ menu.options.file_upload + "' is not a valid URL. " + Style.RESET_ALL
         sys.exit(0)
 
-    # Check if specified file-access options
-    # Check if not defined "--file-dest" option.
-    if menu.options.file_dest == None:
-      # Check if defined "--file-write" option.
-      if menu.options.file_write:
-        file_name = os.path.split(menu.options.file_write)[1]
-        menu.options.file_dest = settings.SRV_ROOT_DIR + file_name
+    # # Check if specified file-access options
+    # # Check if not defined "--file-dest" option.
+    # if menu.options.file_dest == None:
+    #   # Check if defined "--file-write" option.
+    #   if menu.options.file_write:
+    #     file_name = os.path.split(menu.options.file_write)[1]
+    #     menu.options.file_dest = settings.SRV_ROOT_DIR + file_name
         
-      # Check if defined "--file-upload" option.
-      if menu.options.file_upload:
-
-        file_name = os.path.split(menu.options.file_upload)[1]
-        menu.options.file_dest = settings.SRV_ROOT_DIR + file_name
+    #   # Check if defined "--file-upload" option.
+    #   if menu.options.file_upload:
+    #     file_name = os.path.split(menu.options.file_upload)[1]
+    #     menu.options.file_dest = settings.SRV_ROOT_DIR + file_name
         
-    elif menu.options.file_dest and menu.options.file_write == None and menu.options.file_upload == None :
-      print Back.RED + "(x) Error: You must enter the '--file-write' or '--file-upload' parameter." + Style.RESET_ALL
-      sys.exit(0)
+    # elif menu.options.file_dest and menu.options.file_write == None and menu.options.file_upload == None :
+    #   print Back.RED + "(x) Error: You must enter the '--file-write' or '--file-upload' parameter." + Style.RESET_ALL
+    #   sys.exit(0)
         
     # Check if defined "--random-agent" option.
     if menu.options.random_agent:
@@ -204,19 +216,21 @@ def main():
         content = response.read()
         print "[ " + Fore.GREEN + "SUCCEED" + Style.RESET_ALL + " ]"
 
-        if response.info()['server'] :
-          server_banner = response.info()['server']
-        found_server_banner = False
-        for i in range(0,len(settings.SERVER_BANNERS)):
-          if settings.SERVER_BANNERS[i].lower() in server_banner.lower():
-            if menu.options.verbose:
-              print Style.BRIGHT + "(!) The server was identified as " + Style.UNDERLINE + server_banner + Style.RESET_ALL + "." + Style.RESET_ALL
-            settings.SERVER_BANNER = server_banner
-            found_server_banner = True
-            break
-
-        if found_server_banner != True:
-          print  Fore.YELLOW + "(^) Warning: The server which was identified as " + server_banner + " seems unknown." + Style.RESET_ALL
+        try:
+          if response.info()['server'] :
+            server_banner = response.info()['server']
+            found_server_banner = False
+            for i in range(0,len(settings.SERVER_BANNERS)):
+              if settings.SERVER_BANNERS[i].lower() in server_banner.lower():
+                if menu.options.verbose:
+                  print Style.BRIGHT + "(!) The server was identified as " + Style.UNDERLINE + server_banner + Style.RESET_ALL + "." + Style.RESET_ALL
+                settings.SERVER_BANNER = server_banner
+                found_server_banner = True
+                break
+            if found_server_banner != True:
+              print  Fore.YELLOW + "(^) Warning: The server which was identified as " + server_banner + " seems unknown." + Style.RESET_ALL
+        except KeyError:
+          pass
 
         # Charset detection [1].
         # [1] http://www.w3schools.com/html/html_charset.asp
@@ -252,15 +266,15 @@ def main():
             print Back.RED + "(x) Error: Only 'Basic' Access Authentication is supported." + Style.RESET_ALL
             sys.exit(0)
           else:
-            print Back.RED + "(x) Error: Authorization required!" + Style.RESET_ALL + "\n"
+            print Back.RED + "(x) Error: Authorization required!" + Style.RESET_ALL
             sys.exit(0)
           
         elif e.getcode() == 403:
-          print Back.RED + "(x) Error: You don't have permission to access this page." + Style.RESET_ALL + "\n"
+          print Back.RED + "(x) Error: You don't have permission to access this page." + Style.RESET_ALL
           sys.exit(0)
           
         elif e.getcode() == 404:
-          print Back.RED + "(x) Error: The host seems to be down!" + Style.RESET_ALL + "\n"
+          print Back.RED + "(x) Error: The host seems to be down!" + Style.RESET_ALL
           sys.exit(0)
 
         else:
@@ -268,7 +282,7 @@ def main():
 
       except urllib2.URLError, e:
           print "[ " + Fore.RED + "FAILED" + Style.RESET_ALL + " ]"
-          print Back.RED + "(x) Error: The host seems to be down!" + Style.RESET_ALL + "\n"
+          print Back.RED + "(x) Error: The host seems to be down!" + Style.RESET_ALL
           sys.exit(0)
         
       except httplib.BadStatusLine, e:
@@ -277,7 +291,7 @@ def main():
           pass
         
     else:
-      print Back.RED + "(x) Error: You must specify the target URL." + Style.RESET_ALL + "\n"
+      print Back.RED + "(x) Error: You must specify the target URL." + Style.RESET_ALL
       sys.exit(0)
 
     # Check if defined "--proxy" option.
@@ -291,20 +305,20 @@ def main():
     print "\n" + Back.RED + "(x) Aborted: Ctrl-C was pressed!" + Style.RESET_ALL
     if settings.SHOW_LOGS_MSG == True:
       logs.logs_notification(filename)
-      print ""
+    print ""
     sys.exit(0)
 
   except SystemExit: 
     if settings.SHOW_LOGS_MSG == True:
       logs.logs_notification(filename)
-      print ""
+    print ""
     sys.exit(0)
   
   # Accidental stop / restart of the target host server.
   except httplib.BadStatusLine, e:
     if e.line == "" or e.message == "":
       print "\n" + Back.RED + "(x) Error: The target host is not responding." + \
-            " Ensure that host is up and running and try again." + Style.RESET_ALL + "\n"
+            " Ensure that host is up and running and try again." + Style.RESET_ALL
     else: 
       print Back.RED + "(x) Error: " + e.line + e.message + Style.RESET_ALL
     sys.exit(0)

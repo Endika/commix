@@ -85,7 +85,7 @@ def add_parameter(vp_flag, filename, http_request_method, vuln_parameter, payloa
   return vp_flag
 
 
-def upload_payload(filename, counter, payload):
+def update_payload(filename, counter, payload):
 
   output_file = open(filename, "a")
   if "\n" in payload:
@@ -96,4 +96,7 @@ def upload_payload(filename, counter, payload):
 
 
 def logs_notification(filename):
-  print Style.BRIGHT + "\n(!) The results can be found at '" + os.getcwd() + "/" + filename + "'" + Style.RESET_ALL
+  print "\n" + Style.BRIGHT + "(!) The results can be found at '" + os.getcwd() + "/" + filename + "'" + Style.RESET_ALL
+
+
+# eof

